@@ -30,6 +30,7 @@
 */
 
 #include <assert.h>
+#include <float.h>
 #include <stddef.h>
 #include <setjmp.h>		/* longjmp */
 
@@ -605,11 +606,14 @@ static int CheckForIntersect( TESStesselator *tess, ActiveRegion *regUp )
 	DebugEvent( tess );
 
 	tesedgeIntersect( dstUp, orgUp, dstLo, orgLo, &isect );
-	/* The following properties are guaranteed: */
-	assert( MIN( orgUp->t, dstUp->t ) <= isect.t );
-	assert( isect.t <= MAX( orgLo->t, dstLo->t ));
-	assert( MIN( dstLo->s, dstUp->s ) <= isect.s );
-	assert( isect.s <= MAX( orgLo->s, orgUp->s ));
+	/*
+	 * The following properties are guaranteed (with a little wiggle-room to
+	 * account for loss of precision if the values are subnormal.)
+	 */
+	assert( MIN( orgUp->t, dstUp->t ) <= isect.t + FLT_MIN);
+	assert( isect.t <= MAX( orgLo->t, dstLo->t ) + FLT_MIN);
+	assert( MIN( dstLo->s, dstUp->s ) <= isect.s + FLT_MIN);
+	assert( isect.s <= MAX( orgLo->s, orgUp->s ) + FLT_MIN);
 
 	if( VertLeq( &isect, tess->event )) {
 		/* The intersection point lies slightly to the left of the sweep line,
